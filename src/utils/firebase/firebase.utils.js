@@ -1,6 +1,12 @@
 // Import the functions you need from the SDKs you need
 import {initializeApp} from "firebase/app";
-import {getAuth, signInWithRedirect, signInWithPopup, GoogleAuthProvider} from 'firebase/auth';
+import {
+  getAuth,
+  signInWithPopup,
+  signInWithRedirect,
+  GoogleAuthProvider,
+  createUserWithEmailAndPassword
+} from 'firebase/auth';
 import {getFirestore, doc, setDoc, getDoc} from 'firebase/firestore';
 
 // Your web app's Firebase configuration
@@ -27,18 +33,17 @@ googleProvider.setCustomParameters({
 export const auth = getAuth();
 
 export const signInWithGooglePopup = () => signInWithPopup(auth, googleProvider);
-export const signInWithGoogleRedirect = () => signInWithRedirect(auth, googleProvider);
+// export const signInWithGoogleRedirect = () => signInWithRedirect(auth, googleProvider);
 
 export const db = getFirestore();
 
-export const createUserDocumentFromAuth = async (userAuth) => {
+export const createUserDocumentFromAuth = async (userAuth, additionalInformation = {}) => {
+  if(!userAuth) return;
+
   // get document reference inside `db`, under `users` collection, with this user's `uid`
   const userDocRef = doc(db, "users", userAuth.uid);
 
-  console.log(userDocRef);
-
   const userSnapshot = await getDoc(userDocRef);
-  console.log(userSnapshot);
 
   // check if user data does not exist
   if (userSnapshot.exists() === false) {
@@ -48,7 +53,10 @@ export const createUserDocumentFromAuth = async (userAuth) => {
 
     try {
       await setDoc(userDocRef, {
-        displayName, email, createdAt,
+        displayName,
+        email,
+        createdAt,
+        ...additionalInformation
       });
     } catch (e) {
       console.log("error creating the user", e.message);
@@ -56,4 +64,10 @@ export const createUserDocumentFromAuth = async (userAuth) => {
   }
 
   return userDocRef;
+};
+
+export const createAuthUserWithEmailAndPassword = async (email, password) => {
+  if(!email || !password) return;
+
+  return await createUserWithEmailAndPassword(auth, email, password);
 };
